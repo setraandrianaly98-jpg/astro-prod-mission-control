@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Astro-Prod | Mission Control</title>
+  <style>
+    :root {
+      --bg-0: #040b16;
+      --bg-1: #081b2d;
+      --panel: rgba(11, 20, 31, 0.76);
+      --panel-strong: rgba(18, 27, 40, 0.92);
+      --line: rgba(160, 210, 255, 0.18);
+      --line-strong: rgba(130, 201, 255, 0.36);
+      --text: #edf8ff;
+      --muted: #9eb7cd;
+      --accent: #6cd0ff;
+      --accent-2: #7ef7d1;
+      --warning: #ffca72;
+      --danger: #ff7f82;
+      --success: #79f0b2;
+      --shadow: 0 24px 60px rgba(5, 18, 32, 0.7);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(80, 145, 255, 0.1), transparent 30%),
+        radial-gradient(circle at 20% 20%, rgba(46, 92, 170, 0.15), transparent 22%),
+        linear-gradient(180deg, #030b15 0%, #071a2f 32%, #030b15 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    body {
+      position: relative;
+    }
+
+    .space-backdrop {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(67, 136, 255, 0.07), transparent 15%),
+        radial-gradient(circle at 65% 30%, rgba(255,255,255,0.08), transparent 15%);
+    }
+
+    .stars,
+    .stars::before,
+    .stars::after {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background-image:
+        radial-gradient(1.5px 1.5px at 10% 30%, rgba(255,255,255,0.9) 0, transparent 100%),
+        radial-gradient(1.2px 1.2px at 25% 60%, rgba(255,255,255,0.7) 0, transparent 100%),
+        radial-gradient(1.4px 1.4px at 46% 18%, rgba(255,255,255,0.9) 0, transparent 100%),
+        radial-gradient(1.1px 1.1px at 70% 30%, rgba(255,255,255,0.8) 0, transparent 100%),
+        radial-gradient(1.6px 1.6px at 68% 72%, rgba(255,255,255,0.8) 0, transparent 100%),
+        radial-gradient(1.7px 1.7px at 80% 20%, rgba(255,255,255,0.75) 0, transparent 100%),
+        radial-gradient(2px 2px at 92% 44%, rgba(255,255,255,0.8) 0, transparent 100%),
+        radial-gradient(1.3px 1.3px at 55% 70%, rgba(255,255,255,0.7) 0, transparent 100%),
+        radial-gradient(1.4px 1.4px at 15% 82%, rgba(255,255,255,0.75) 0, transparent 100%),
+        radial-gradient(1.8px 1.8px at 90% 78%, rgba(255,255,255,0.72) 0, transparent 100%);
+      opacity: 0.9;
+      animation: twinkle 20s linear infinite alternate;
+    }
+
+    .stars::before {
+      transform: scale(1.2);
+      opacity: 0.7;
+      animation-delay: 2s;
+    }
+
+    .stars::after {
+      transform: scale(1.4);
+      opacity: 0.5;
+      animation-delay: 4s;
+    }
+
+    @keyframes twinkle {
+      0% { opacity: 0.35; }
+      50% { opacity: 0.9; }
+      100% { opacity: 0.5; }
+    }
+
+    .planet-scene {
+      position: fixed;
+      right: -10vw;
+      top: 10vh;
+      width: clamp(280px, 38vw, 700px);
+      height: clamp(280px, 38vw, 700px);
+      z-index: 0;
+      opacity: 0.95;
+      pointer-events: none;
+      filter: saturate(1.15) contrast(1.05);
+    }
+
+    .planet-orbit {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(111,173,255,0.1), rgba(0,0,0,0) 62%);
+      box-shadow: 0 0 35px rgba(95,149,255,0.12);
+      animation: orbitFloat 28s ease-in-out infinite alternate;
+    }
+
+    .planet {
+      position: absolute;
+      right: 10%;
+      top: 12%;
+      width: 68%;
+      height: 68%;
+      border-radius: 50%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(127, 201, 255, 0.95), rgba(26, 114, 184, 0.7) 14%, rgba(18, 78, 144, 0.75) 32%, rgba(6, 35, 71, 0.9) 55%, rgba(3, 22, 46, 0.96) 100%),
+        linear-gradient(145deg, #78b6ff 0%, #163a7b 30%, #0a214d 50%, #020d18 100%);
+      box-shadow:
+        inset -30px -35px 50px rgba(3, 16, 34, 0.9),
+        inset 28px 18px 28px rgba(130, 203, 255, 0.35),
+        0 0 45px rgba(93, 145, 255, 0.25);
+      animation: earthRotate 120s linear infinite;
+    }
+
+    .planet::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(65% 65% at 52% 38%, rgba(140, 214, 255, 0.0) 0, rgba(140,214,255,0.13) 35%, transparent 60%),
+        radial-gradient(circle at 28% 30%, rgba(36, 125, 76, 0.88) 0 7%, transparent 7.5%),
+        radial-gradient(circle at 58% 27%, rgba(35, 135, 78, 0.92) 0 10%, transparent 10.4%),
+        radial-gradient(circle at 40% 52%, rgba(25, 114, 70, 0.85) 0 11%, transparent 11.5%),
+        radial-gradient(circle at 63% 56%, rgba(32, 133, 82, 0.9) 0 13%, transparent 13.5%),
+        radial-gradient(circle at 72% 40%, rgba(42, 144, 86, 0.82) 0 9%, transparent 9.3%),
+        radial-gradient(circle at 82% 72%, rgba(32, 120, 78, 0.9) 0 10%, transparent 10.5%),
+        radial-gradient(circle at 20% 72%, rgba(20, 82, 62, 0.9) 0 12%, transparent 12.5%),
+        linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.06) 100%);
+      opacity: 0.96;
+    }
+
+    .planet::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(90% 90% at 28% 18%, rgba(255,255,255,0.35), transparent 40%),
+        linear-gradient(90deg, rgba(8, 44, 77, 0.18), rgba(255,255,255,0.1), rgba(8,44,77,0.18));
+      mix-blend-mode: screen;
+      opacity: 0.9;
+    }
+
+    .clouds {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(30% 20% at 32% 28%, rgba(255,255,255,0.36), transparent 72%),
+        radial-gradient(34% 20% at 58% 22%, rgba(255,255,255,0.2), transparent 75%),
+        radial-gradient(30% 20% at 72% 58%, rgba(255,255,255,0.18), transparent 75%),
+        radial-gradient(18% 14% at 50% 75%, rgba(255,255,255,0.16), transparent 70%);
+      animation: cloudDrift 28s ease-in-out infinite alternate;
+      opacity: 0.85;
+    }
+
+    .city-lights {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background:
+        radial-gradient(3px 3px at 26% 34%, rgba(255, 210, 70, 0.9) 0, transparent 100%),
+        radial-gradient(3px 3px at 42% 46%, rgba(255, 210, 70, 0.9) 0, transparent 100%),
+        radial-gradient(3px 3px at 58% 38%, rgba(255, 210, 70, 0.9) 0, transparent 100%),
+        radial-gradient(3px 3px at 64% 62%, rgba(255, 210, 70, 0.9) 0, transparent 100%),
+        radial-gradient(3px 3px at 76% 40%, rgba(255, 210, 70, 0.9) 0, transparent 100%),
+        radial-gradient(3px 3px at 37% 62%, rgba(255, 210, 70, 0.9) 0, transparent 100%);
+      opacity: 0.75;
+      mix-blend-mode: screen;
+    }
+
+    @keyframes earthRotate {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes cloudDrift {
+      0% { transform: translate3d(-12px, 8px, 0) scale(1.02); }
+      100% { transform: translate3d(14px, -10px, 0) scale(1.05); }
+    }
+
+    @keyframes orbitFloat {
+      0% { transform: scale(0.96) rotate(-3deg); }
+      100% { transform: scale(1.04) rotate(4deg); }
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      width: min(1500px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 60px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 18px 22px;
+      margin-bottom: 18px;
+      background: rgba(9, 16, 25, 0.42);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(108, 208, 255, 0.24), rgba(126, 247, 209, 0.25));
+      border: 1px solid var(--line-strong);
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 18px rgba(108, 208, 255, 0.25);
+      font-size: 1.2rem;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 2vw, 2rem);
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .brand small {
+      color: var(--muted);
+      display: block;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.64rem;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: rgba(17, 26, 39, 0.7);
+      color: var(--muted);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .ghost-btn,
+    .danger-btn,
+    .mini-btn {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      padding: 11px 16px;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .primary-btn {
+      color: #071824;
+      background: linear-gradient(135deg, #7ee3ff, #9bf4d6);
+      box-shadow: 0 14px 28px rgba(110, 205, 255, 0.2);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .ghost-btn:hover,
+    .danger-btn:hover,
+    .mini-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      background: rgba(24, 37, 52, 0.85);
+      border-color: var(--line-strong);
+      color: var(--text);
+    }
+
+    .ghost-btn {
+      background: rgba(13, 19, 28, 0.46);
+      border-color: var(--line);
+      color: var(--text);
+    }
+
+    .danger-btn {
+      background: rgba(255, 104, 121, 0.12);
+      border-color: rgba(255, 126, 136, 0.45);
+      color: #ffc7ca;
+    }
+
+    .mini-btn {
+      padding: 7px 10px;
+      font-size: 0.76rem;
+      border-radius: 10px;
+      background: rgba(24, 36, 48, 0.8);
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(13, 20, 30, 0.8), rgba(9, 15, 23, 0.82));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-card {
+      padding: 18px 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, rgba(108,208,255,0.8), rgba(126,247,209,0.5));
+    }
+
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .stat-icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: rgba(108, 208, 255, 0.10);
+      border: 1px solid rgba(108, 208, 255, 0.22);
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    .stat-value {
+      font-size: clamp(1.4rem, 2vw, 2.1rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin: 0 0 4px;
+    }
+
+    .stat-sub {
+      color: var(--muted);
+      font-size: 0.8rem;
+      min-height: 18px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1.1fr 1.7fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 1.08rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .panel-title span {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .field label {
+      font-size: 0.76rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(10, 18, 29, 0.8);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .field textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: rgba(108, 208, 255, 0.8);
+      box-shadow: 0 0 0 3px rgba(108, 208, 255, 0.12);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .checkbox-row input {
+      accent-color: var(--accent);
+      width: 18px;
+      height: 18px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .summary-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(11, 17, 24, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .summary-card label {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .summary-card strong {
+      font-size: 1.08rem;
+      font-weight: 700;
+    }
+
+    .summary-card strong.positive { color: var(--success); }
+    .summary-card strong.warning { color: var(--warning); }
+    .summary-card strong.danger { color: var(--danger); }
+    .summary-card strong.info { color: var(--accent); }
+
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .split-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .upcoming-item,
+    .history-date-group,
+    .day-closure {
+      background: rgba(10, 18, 28, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .upcoming-item {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .list-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .sale-name {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+
+    .badge.blue { background: rgba(108,208,255,0.08); border-color: rgba(108,208,255,0.25); color: var(--accent); }
+    .badge.green { background: rgba(121,240,178,0.08); border-color: rgba(121,240,178,0.28); color: var(--success); }
+    .badge.orange { background: rgba(255,202,114,0.08); border-color: rgba(255,202,114,0.25); color: var(--warning); }
+    .badge.red { background: rgba(255,127,130,0.08); border-color: rgba(255,127,130,0.25); color: var(--danger); }
+    .badge.gray { background: rgba(158,183,205,0.08); border-color: rgba(158,183,205,0.25); color: var(--muted); }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .meta-grid div {
+      background: rgba(14, 25, 35, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .small-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .upcoming-actions,
+    .history-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .history-date-group {
+      margin-bottom: 16px;
+    }
+
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .day-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .day-summary-grid .cell {
+      background: rgba(14, 24, 34, 0.78);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .cell .small-label {
+      margin-bottom: 6px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1100px;
+    }
+
+    th, td {
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(14, 20, 30, 0.84);
+    }
+
+    td {
+      color: var(--text);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.68rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .status-pill.in_progress { background: rgba(108,208,255,0.08); border-color: rgba(108,208,255,0.25); color: var(--accent); }
+    .status-pill.finished { background: rgba(121,240,178,0.08); border-color: rgba(121,240,178,0.25); color: var(--success); }
+    .status-pill.pending { background: rgba(255,202,114,0.08); border-color: rgba(255,202,114,0.25); color: var(--warning); }
+    .status-pill.closed { background: rgba(158,183,205,0.08); border-color: rgba(158,183,205,0.25); color: var(--muted); }
+    .status-pill.late { background: rgba(255,127,130,0.08); border-color: rgba(255,127,130,0.25); color: var(--danger); }
+    .status-pill.canceled { background: rgba(255,127,130,0.08); border-color: rgba(255,127,130,0.25); color: var(--danger); }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .toolbar .field {
+      flex: 1 1 180px;
+    }
+
+    .toolbar .field input,
+    .toolbar .field select {
+      min-height: 42px;
+    }
+
+    .footnote {
+      color: var(--muted);
+      font-size: 0.74rem;
+      margin-top: 10px;
+    }
+
+    .capacity-box {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .calc-float {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: min(320px, calc(100% - 22px));
+      background: rgba(10, 18, 28, 0.86);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 30;
+      overflow: hidden;
+    }
+
+    .calc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(12, 21, 31, 0.8);
+    }
+
+    .calc-header strong {
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.74rem;
+      color: var(--muted);
+    }
+
+    .calc-content {
+      padding: 14px;
+    }
+
+    .calc-display {
+      width: 100%;
+      background: rgba(6, 12, 18, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text);
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 10px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .key {
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: rgba(18, 27, 38, 0.9);
+      padding: 10px 0;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .key.operator { color: var(--accent); }
+    .key.equals { background: linear-gradient(135deg, #7ee3ff, #9bf4d6); color: #081823; }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace,
+      .split-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        width: min(100% - 18px, 1000px);
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .stats-grid,
+      .form-grid,
+      .capacity-box {
+        grid-template-columns: 1fr;
+      }
+
+      .day-summary-grid {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+      }
+
+      .calc-float {
+        left: 10px;
+        right: 10px;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="space-backdrop">
+    <div class="stars"></div>
+  </div>
+
+  <div class="planet-scene" aria-hidden="true">
+    <div class="planet-orbit"></div>
+    <div class="planet">
+      <div class="clouds"></div>
+      <div class="city-lights"></div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <header class="topbar card">
+      <div class="brand">
+        <div class="brand-mark">◎</div>
+        <div>
+          <h1>Astro-Prod</h1>
+          <small>Mission Control</small>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="pill" id="currentDateLabel"></div>
+        <button class="secondary-btn" id="exportBtn">Exporter</button>
+        <button class="secondary-btn" id="importBtn">Importer</button>
+        <input id="importFileInput" type="file" accept="application/json" class="sr-only" />
+      </div>
+    </header>
+
+    <section class="stats-grid" id="dashboardStats"></section>
+
+    <div class="workspace">
+      <section class="card panel">
+        <div class="panel-title">
+          <h2>Ajouter une production</h2>
+          <span id="editingStatusText">Nouvelle</span>
+        </div>
+
+        <form id="productionForm">
+          <div class="form-grid">
+            <div class="field">
+              <label for="dateInput">Date</label>
+              <input id="dateInput" type="date" required />
+            </div>
+            <div class="field">
+              <label for="saleNameInput">Nom de vente</label>
+              <input id="saleNameInput" type="text" placeholder="Ex. Nike" required />
+            </div>
+
+            <div class="field">
+              <label for="typeInput">Type de production</label>
+              <select id="typeInput" required>
+                <option value="AL SIMPLE">AL SIMPLE</option>
+                <option value="AL COMPLEXE">AL COMPLEXE</option>
+                <option value="FR SIMPLE">FR SIMPLE</option>
+                <option value="FR COMPLEXE">FR COMPLEXE</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="objectiveInput">Objectif</label>
+              <input id="objectiveInput" type="number" step="0.01" readonly />
+            </div>
+
+            <div class="field">
+              <label for="totalRefsInput">Nombre total de références</label>
+              <input id="totalRefsInput" type="number" min="0" step="1" required />
+            </div>
+            <div class="field">
+              <label for="processedRefsInput">Références traitées</label>
+              <input id="processedRefsInput" type="number" min="0" step="1" />
+            </div>
+
+            <div class="field">
+              <label for="startTimeInput">Heure de début</label>
+              <input id="startTimeInput" type="time" />
+            </div>
+            <div class="field">
+              <label for="realEndTimeInput">Heure de fin réelle</label>
+              <input id="realEndTimeInput" type="time" />
+            </div>
+
+            <div class="field">
+              <label for="plannedEndInput">Heure de fin prévue</label>
+              <input id="plannedEndInput" type="time" readonly />
+            </div>
+            <div class="field">
+              <label for="targetEndInput">Fin cible avec marge -5 min</label>
+              <input id="targetEndInput" type="time" readonly />
+            </div>
+
+            <div class="field">
+              <label for="theoreticalMinutesInput">Temps théorique</label>
+              <input id="theoreticalMinutesInput" type="text" readonly />
+            </div>
+            <div class="field">
+              <label for="realMinutesInput">Temps réel de production</label>
+              <input id="realMinutesInput" type="text" readonly />
+            </div>
+
+            <div class="field">
+              <label for="performanceInput">Performance</label>
+              <input id="performanceInput" type="text" readonly />
+            </div>
+            <div class="field">
+              <label for="remainingRefsInput">Références restantes</label>
+              <input id="remainingRefsInput" type="number" min="0" step="1" readonly />
+            </div>
+
+            <div class="field">
+              <label for="statusInput">Statut de production</label>
+              <select id="statusInput">
+                <option value="À venir">À venir</option>
+                <option value="En cours">En cours</option>
+                <option value="Terminée">Terminée</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="plannedDateInput">Date prévue / cible</label>
+              <input id="plannedDateInput" type="date" />
+            </div>
+          </div>
+
+          <label class="checkbox-row"><input id="pause30Input" type="checkbox" /> Pause 30 min</label>
+
+          <div class="summary-grid">
+            <div class="summary-card">
+              <label>Reste</label>
+              <strong id="remainingDisplay" class="danger">0 références</strong>
+            </div>
+            <div class="summary-card">
+              <label>Temps théorique</label>
+              <strong id="theoreticalDisplay" class="info">0 min</strong>
+            </div>
+            <div class="summary-card">
+              <label>Fin prévue</label>
+              <strong id="plannedEndDisplay" class="info">--:--</strong>
+            </div>
+            <div class="summary-card">
+              <label>Fin cible -5 min</label>
+              <strong id="targetEndDisplay" class="warning">--:--</strong>
+            </div>
+            <div class="summary-card">
+              <label>Temps réel</label>
+              <strong id="realMinuteDisplay" class="positive">0 min</strong>
+            </div>
+            <div class="summary-card">
+              <label>Performance</label>
+              <strong id="performanceDisplay" class="positive">0%</strong>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button type="button" class="ghost-btn" id="calculateBtn">Calculer</button>
+            <button type="submit" class="primary-btn" id="saveProductionBtn">Enregistrer la production</button>
+            <button type="button" class="secondary-btn" id="resetFormBtn">Réinitialiser</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card panel">
+        <div class="panel-title">
+          <h2>Ventes à venir</h2>
+          <span>Préparation / capacité</span>
+        </div>
+
+        <form id="upcomingForm">
+          <div class="form-grid">
+            <div class="field">
+              <label for="upSaleName">Nom de vente</label>
+              <input id="upSaleName" type="text" placeholder="Ex. Nike" required />
+            </div>
+            <div class="field">
+              <label for="upVolume">Nombre de références / Volume</label>
+              <input id="upVolume" type="number" min="0" step="1" required />
+            </div>
+            <div class="field">
+              <label for="upCode">Code de vente</label>
+              <select id="upCode">
+                <option value="AL SIMPLE">AL SIMPLE</option>
+                <option value="AL COMPLEXE">AL COMPLEXE</option>
+                <option value="FR SIMPLE">FR SIMPLE</option>
+                <option value="FR COMPLEXE">FR COMPLEXE</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="upObjective">Objectif automatique</label>
+              <input id="upObjective" type="number" step="0.01" readonly />
+            </div>
+            <div class="field">
+              <label for="upDate">Date prévue</label>
+              <input id="upDate" type="date" required />
+            </div>
+            <div class="field">
+              <label for="upStartTime">Heure prévue de début</label>
+              <input id="upStartTime" type="time" />
+            </div>
+            <div class="field">
+              <label for="upPriority">Priorité</label>
+              <select id="upPriority">
+                <option value="Haute">Haute</option>
+                <option value="Moyenne" selected>Moyenne</option>
+                <option value="Basse">Basse</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="upStatus">Statut</label>
+              <select id="upStatus">
+                <option value="À venir">À venir</option>
+                <option value="Aujourd'hui">Aujourd'hui</option>
+                <option value="En production">En production</option>
+                <option value="En retard">En retard</option>
+                <option value="Terminée">Terminée</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="upNote">Note / commentaire</label>
+              <textarea id="upNote" placeholder="Commentaire, remarque, lot particulier..."></textarea>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button type="submit" class="primary-btn">Ajouter la vente à venir</button>
+            <button type="button" class="secondary-btn" id="clearUpcomingFormBtn">Effacer</button>
+          </div>
+        </form>
+
+        <div class="list" id="upcomingList"></div>
+      </section>
+    </div>
+
+    <section class="split-panel">
+      <section class="card panel">
+        <div class="panel-title">
+          <h2>Prévision de capacité</h2>
+          <span>Références estimées</span>
+        </div>
+
+        <div class="capacity-box">
+          <div class="field">
+            <label for="capacityStart">Début disponible</label>
+            <input id="capacityStart" type="time" value="14:32" />
+          </div>
+          <div class="field">
+            <label for="capacityEnd">Fin disponible</label>
+            <input id="capacityEnd" type="time" value="19:00" />
+          </div>
+          <div class="field">
+            <label for="capacityCode">Code</label>
+            <select id="capacityCode">
+              <option value="AL SIMPLE">AL SIMPLE</option>
+              <option value="AL COMPLEXE">AL COMPLEXE</option>
+              <option value="FR SIMPLE">FR SIMPLE</option>
+              <option value="FR COMPLEXE">FR COMPLEXE</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="capacityVolume">Volume à valider</label>
+            <input id="capacityVolume" type="number" min="0" step="1" value="40" />
+          </div>
+        </div>
+
+        <label class="checkbox-row"><input id="capacityPause" type="checkbox" checked /> Pause 30 min</label>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <label>Temps disponible</label>
+            <strong id="availableMinutesDisplay" class="info">0 min</strong>
+          </div>
+          <div class="summary-card">
+            <label>Références estimées</label>
+            <strong id="estimatedRefsDisplay" class="positive">0</strong>
+          </div>
+          <div class="summary-card">
+            <label>Références restantes</label>
+            <strong id="capacityRemainingDisplay" class="danger">0</strong>
+          </div>
+          <div class="summary-card">
+            <label>Objectif</label>
+            <strong id="capacityObjectiveDisplay" class="info">0 refs/h</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="card panel">
+        <div class="panel-title">
+          <h2>Historique de production</h2>
+          <span>Recherche & filtres</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="field">
+            <label for="historySearch">Recherche</label>
+            <input id="historySearch" type="text" placeholder="Nom de vente..." />
+          </div>
+          <div class="field">
+            <label for="historyDateFilter">Date</label>
+            <input id="historyDateFilter" type="date" />
+          </div>
+          <div class="field">
+            <label for="historyTypeFilter">Type</label>
+            <select id="historyTypeFilter">
+              <option value="">Tous</option>
+              <option value="AL SIMPLE">AL SIMPLE</option>
+              <option value="AL COMPLEXE">AL COMPLEXE</option>
+              <option value="FR SIMPLE">FR SIMPLE</option>
+              <option value="FR COMPLEXE">FR COMPLEXE</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="historySaleFilter">Vente</label>
+            <input id="historySaleFilter" type="text" placeholder="Nom de vente" />
+          </div>
+        </div>
+
+        <div id="historyContainer"></div>
+      </section>
+    </section>
+  </div>
+
+  <div class="calc-float" id="floatingCalculator">
+    <div class="calc-header">
+      <strong>Calculatrice</strong>
+      <button type="button" class="mini-btn" id="toggleCalcBtn">Masquer</button>
+    </div>
+    <div class="calc-content">
+      <div class="calc-display" id="calcDisplay">0</div>
+      <div class="keypad">
+        <button class="key operator" data-action="clear">C</button>
+        <button class="key operator" data-action="backspace">⌫</button>
+        <button class="key operator" data-action="percent">%</button>
+        <button class="key operator" data-action="divide">÷</button>
+
+        <button class="key" data-value="7">7</button>
+        <button class="key" data-value="8">8</button>
+        <button class="key" data-value="9">9</button>
+        <button class="key operator" data-action="multiply">×</button>
+
+        <button class="key" data-value="4">4</button>
+        <button class="key" data-value="5">5</button>
+        <button class="key" data-value="6">6</button>
+        <button class="key operator" data-action="subtract">−</button>
+
+        <button class="key" data-value="1">1</button>
+        <button class="key" data-value="2">2</button>
+        <button class="key" data-value="3">3</button>
+        <button class="key operator" data-action="add">+</button>
+
+        <button class="key" data-value="0" style="grid-column: span 2;">0</button>
+        <button class="key" data-value=".">.</button>
+        <button class="key equals" data-action="equals">=</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_PRODUCTIONS = 'astroProdProductions';
+    const STORAGE_UPCOMING = 'astroProdUpcomingSales';
+    const STORAGE_CLOSURES = 'astroProdDailyClosures';
+
+    const OBJECTIFS = {
+      'AL SIMPLE': 10,
+      'AL COMPLEXE': 4.29,
+      'FR SIMPLE': 15,
+      'FR COMPLEXE': 6.29
+    };
+
+    const state = {
+      productions: loadFromStorage(STORAGE_PRODUCTIONS, []),
+      upcomingSales: loadFromStorage(STORAGE_UPCOMING, []),
+      closures: loadFromStorage(STORAGE_CLOSURES, []),
+      editingProductionId: null,
+      calculator: {
+        current: '0',
+        operator: null,
+        stored: null,
+      }
+    };
+
+    const els = {
+      dashboardStats: document.getElementById('dashboardStats'),
+      currentDateLabel: document.getElementById('currentDateLabel'),
+      productionForm: document.getElementById('productionForm'),
+      upcomingForm: document.getElementById('upcomingForm'),
+      historyContainer: document.getElementById('historyContainer'),
+      upcomingList: document.getElementById('upcomingList'),
+      editingStatusText: document.getElementById('editingStatusText'),
+      exportBtn: document.getElementById('exportBtn'),
+      importBtn: document.getElementById('importBtn'),
+      importFileInput: document.getElementById('importFileInput'),
+      calculateBtn: document.getElementById('calculateBtn'),
+      resetFormBtn: document.getElementById('resetFormBtn'),
+      clearUpcomingFormBtn: document.getElementById('clearUpcomingFormBtn'),
+      historySearch: document.getElementById('historySearch'),
+      historyDateFilter: document.getElementById('historyDateFilter'),
+      historyTypeFilter: document.getElementById('historyTypeFilter'),
+      historySaleFilter: document.getElementById('historySaleFilter'),
+      typeInput: document.getElementById('typeInput'),
+      objectiveInput: document.getElementById('objectiveInput'),
+      totalRefsInput: document.getElementById('totalRefsInput'),
+      processedRefsInput: document.getElementById('processedRefsInput'),
+      startTimeInput: document.getElementById('startTimeInput'),
+      realEndTimeInput: document.getElementById('realEndTimeInput'),
+      pause30Input: document.getElementById('pause30Input'),
+      plannedEndInput: document.getElementById('plannedEndInput'),
+      targetEndInput: document.getElementById('targetEndInput'),
+      theoreticalMinutesInput: document.getElementById('theoreticalMinutesInput'),
+      realMinutesInput: document.getElementById('realMinutesInput'),
+      performanceInput: document.getElementById('performanceInput'),
+      remainingRefsInput: document.getElementById('remainingRefsInput'),
+      remainingDisplay: document.getElementById('remainingDisplay'),
+      theoreticalDisplay: document.getElementById('theoreticalDisplay'),
+      plannedEndDisplay: document.getElementById('plannedEndDisplay'),
+      targetEndDisplay: document.getElementById('targetEndDisplay'),
+      realMinuteDisplay: document.getElementById('realMinuteDisplay'),
+      performanceDisplay: document.getElementById('performanceDisplay'),
+      dateInput: document.getElementById('dateInput'),
+      saleNameInput: document.getElementById('saleNameInput'),
+      statusInput: document.getElementById('statusInput'),
+      plannedDateInput: document.getElementById('plannedDateInput'),
+      upSaleName: document.getElementById('upSaleName'),
+      upVolume: document.getElementById('upVolume'),
+      upCode: document.getElementById('upCode'),
+      upObjective: document.getElementById('upObjective'),
+      upDate: document.getElementById('upDate'),
+      upStartTime: document.getElementById('upStartTime'),
+      upPriority: document.getElementById('upPriority'),
+      upStatus: document.getElementById('upStatus'),
+      upNote: document.getElementById('upNote'),
+      capacityStart: document.getElementById('capacityStart'),
+      capacityEnd: document.getElementById('capacityEnd'),
+      capacityCode: document.getElementById('capacityCode'),
+      capacityVolume: document.getElementById('capacityVolume'),
+      capacityPause: document.getElementById('capacityPause'),
+      availableMinutesDisplay: document.getElementById('availableMinutesDisplay'),
+      estimatedRefsDisplay: document.getElementById('estimatedRefsDisplay'),
+      capacityRemainingDisplay: document.getElementById('capacityRemainingDisplay'),
+      capacityObjectiveDisplay: document.getElementById('capacityObjectiveDisplay'),
+      calcDisplay: document.getElementById('calcDisplay'),
+      toggleCalcBtn: document.getElementById('toggleCalcBtn'),
+      floatingCalculator: document.getElementById('floatingCalculator')
+    };
+
+    function loadFromStorage(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function saveToStorage(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function uid(prefix = 'id') {
+      return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '--';
+      const d = new Date(`${dateStr}T00:00:00`);
+      if (Number.isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function formatTimeHHMM(value) {
+      if (!value) return '--:--';
+      const match = /^\d{1,2}:\d{2}$/.test(value);
+      if (!match) return '--:--';
+      const [h, m] = value.split(':').map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return '--:--';
+      const safeMinutes = ((h * 60 + m) + 1440) % 1440;
+      const safeH = Math.floor(safeMinutes / 60);
+      const safeM = safeMinutes % 60;
+      return `${String(safeH).padStart(2, '0')}:${String(safeM).padStart(2, '0')}`;
+    }
+
+    function toMinutesFromTime(value) {
+      if (!value) return 0;
+      const [h, m] = value.split(':').map(Number);
+      if (Number.isNaN(h) || Number.isNaN(m)) return 0;
+      return h * 60 + m;
+    }
+
+    function addMinutesToTime(timeValue, minutes) {
+      if (!timeValue) return null;
+      const baseMinutes = toMinutesFromTime(timeValue);
+      const total = baseMinutes + Math.max(0, Number(minutes) || 0);
+      const normalized = ((total % 1440) + 1440) % 1440;
+      const h = Math.floor(normalized / 60);
+      const m = normalized % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    function minutesBetweenTimes(start, end) {
+      if (!start || !end) return 0;
+      const diff = toMinutesFromTime(end) - toMinutesFromTime(start);
+      return Math.max(0, diff);
+    }
+
+    function parseNumeric(input, fallback = 0) {
+      const value = Number(input);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function clampToZero(value) {
+      return Math.max(0, Number(value) || 0);
+    }
+
+    function computeObjective(type) {
+      return OBJECTIFS[type] || 0;
+    }
+
+    function getStatusByMetrics({ totalRefs, processedRefs, realEndTime, status }) {
+      const total = parseNumeric(totalRefs, 0);
+      const processed = parseNumeric(processedRefs, 0);
+      if (status === 'Terminée' || processed >= total && total > 0) return 'Terminée';
+      if (processed > 0 && processed < total) return 'En cours';
+      if (realEndTime && processed >= total) return 'Terminée';
+      return 'À venir';
+    }
+
+    function computeProductionData(formValues) {
+      const totalRefs = parseNumeric(formValues.totalRefs, 0);
+      const processedRefs = parseNumeric(formValues.processedRefs, 0);
+      const objective = computeObjective(formValues.type);
+      const pause30 = Boolean(formValues.pause30);
+      const theoreticalMinutes = objective && totalRefs ? (totalRefs / objective) * 60 : 0;
+
+      let plannedEnd = null;
+      if (formValues.startTime) {
+        plannedEnd = addMinutesToTime(formValues.startTime, theoreticalMinutes + (pause30 ? 30 : 0));
+      }
+
+      let targetEnd = null;
+      if (plannedEnd) {
+        targetEnd = addMinutesToTime(plannedEnd, -5);
+      }
+
+      let realProductionMinutes = 0;
+      if (formValues.startTime && formValues.realEndTime) {
+        realProductionMinutes = minutesBetweenTimes(formValues.startTime, formValues.realEndTime);
+        if (pause30) realProductionMinutes = Math.max(0, realProductionMinutes - 30);
+      }
+
+      let performance = 0;
+      if (theoreticalMinutes > 0 && realProductionMinutes > 0) {
+        performance = (theoreticalMinutes / realProductionMinutes) * 100;
+      }
+
+      const remainingRefs = Math.max(0, totalRefs - processedRefs);
+      const computedStatus = getStatusByMetrics({ totalRefs, processedRefs, realEndTime: formValues.realEndTime, status: formValues.status });
+
+      return {
+        objective,
+        theoreticalMinutes,
+        plannedEnd,
+        targetEnd,
+        realProductionMinutes,
+        performance,
+        remainingRefs,
+        status: computedStatus
+      };
+    }
+
+    function renderDashboard() {
+      const today = new Date().toISOString().split('T')[0];
+      const todaysProductions = state.productions.filter(p => p.date === today);
+      const totalRefs = todaysProductions.reduce((sum, p) => sum + parseNumeric(p.totalRefs, 0), 0);
+      const totalProcessed = todaysProductions.reduce((sum, p) => sum + parseNumeric(p.processedRefs, 0), 0);
+      const remainingTotal = todaysProductions.reduce((sum, p) => sum + parseNumeric(p.remainingRefs, 0), 0);
+      const salesCount = todaysProductions.length;
+      const salesCompleted = todaysProductions.filter(p => String(p.status).toLowerCase() === 'terminée').length;
+      const salesInProgress = todaysProductions.filter(p => String(p.status).toLowerCase() === 'en cours').length;
+      const upcomingCount = state.upcomingSales.length;
+
+      const workingMinutes = todaysProductions.reduce((sum, p) => sum + parseNumeric(p.realProductionMinutes || 0, 0), 0);
+      const theoreticalDaily = todaysProductions.reduce((sum, p) => sum + parseNumeric(p.theoreticalMinutes || 0, 0), 0);
+      const dailyPerformance = workingMinutes > 0 && theoreticalDaily > 0 ? (theoreticalDaily / workingMinutes) * 100 : 0;
+
+      const cards = [
+        { label: 'Références du jour', value: `${totalRefs}`, sub: `${totalProcessed} traitées` },
+        { label: 'Ventes du jour', value: `${salesCount}`, sub: `${salesCompleted} terminées` },
+        { label: 'Temps de production', value: `${Math.round(workingMinutes)} min`, sub: `${Math.round(theoreticalDaily)} min théorique` },
+        { label: 'Performance journalière', value: `${dailyPerformance ? dailyPerformance.toFixed(2) : '0.00'} %`, sub: `${salesInProgress} en cours` },
+        { label: 'Références restantes', value: `${remainingTotal}`, sub: `${upcomingCount} ventes à venir` },
+        { label: 'Ventes terminées', value: `${salesCompleted}`, sub: 'Rythme de clôture' },
+        { label: 'Ventes en cours', value: `${salesInProgress}`, sub: 'Suivi actif' },
+        { label: 'Ventes à venir', value: `${upcomingCount}`, sub: 'Préparation' }
+      ];
+
+      els.dashboardStats.innerHTML = cards.map((card) => `
+        <article class="card stat-card">
+          <div class="stat-top">
+            <span>${card.label}</span>
+            <div class="stat-icon">◎</div>
+          </div>
+          <div class="stat-value">${card.value}</div>
+          <div class="stat-sub">${card.sub}</div>
+        </article>
+      `).join('');
+
+      els.currentDateLabel.textContent = new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    }
+
+    function renderUpcomingSales() {
+      const upcoming = [...state.upcomingSales].sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.startTime || '00:00'}`);
+        const dateB = new Date(`${b.date}T${b.startTime || '00:00'}`);
+        return dateA - dateB;
+      });
+
+      if (!upcoming.length) {
+        els.upcomingList.innerHTML = '<div class="upcoming-item"><div class="sale-name">Aucune vente à venir</div><div class="meta-grid"><div><span class="small-label">État</span>Prêt pour planification</div></div></div>';
+        return;
+      }
+
+      els.upcomingList.innerHTML = upcoming.map((sale) => {
+        const objective = computeObjective(sale.code);
+        const theoreticalMinutes = sale.volume && objective ? (sale.volume / objective) * 60 : 0;
+        const estimatedEnd = sale.startTime && theoreticalMinutes ? addMinutesToTime(sale.startTime, theoreticalMinutes) : null;
+        const statusClass = getUpcomingBadgeStatus(sale);
+        return `
+          <div class="upcoming-item">
+            <div class="list-head">
+              <div class="sale-name">${escapeHtml(sale.name)}</div>
+              <span class="badge ${statusClass.className}">${statusClass.label}</span>
+            </div>
+            <div class="meta-grid">
+              <div><span class="small-label">Volume</span>${sale.volume || 0} refs</div>
+              <div><span class="small-label">Code</span>${sale.code}</div>
+              <div><span class="small-label">Objectif</span>${objective} refs/h</div>
+              <div><span class="small-label">Date</span>${formatDate(sale.date)}</div>
+              <div><span class="small-label">Début</span>${sale.startTime || '--:--'}</div>
+              <div><span class="small-label">Fin estimée</span>${estimatedEnd || '--:--'}</div>
+            </div>
+            ${sale.note ? `<div class="footnote">${escapeHtml(sale.note)}</div>` : ''}
+            <div class="upcoming-actions">
+              <button class="mini-btn" data-action="edit-upcoming" data-id="${sale.id}">Modifier</button>
+              <button class="mini-btn" data-action="launch-upcoming" data-id="${sale.id}">Lancer la production</button>
+              <button class="mini-btn" data-action="delete-upcoming" data-id="${sale.id}">Supprimer</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getUpcomingBadgeStatus(sale) {
+      const today = new Date().toISOString().split('T')[0];
+      if (sale.status === 'En production') return { className: 'blue', label: 'En production' };
+      if (sale.status === 'Terminée') return { className: 'green', label: 'Terminée' };
+      if (sale.date < today) return { className: 'red', label: 'En retard' };
+      if (sale.date === today) return { className: 'orange', label: 'Aujourd’hui' };
+      return { className: 'gray', label: 'À venir' };
+    }
+
+    function renderHistory() {
+      const search = (els.historySearch.value || '').trim().toLowerCase();
+      const dateFilter = els.historyDateFilter.value;
+      const typeFilter = els.historyTypeFilter.value;
+      const saleFilter = (els.historySaleFilter.value || '').trim().toLowerCase();
+
+      const grouped = groupProductionsByDate(state.productions);
+      const filteredDates = Object.keys(grouped).filter((dayDate) => {
+        const dayGroup = grouped[dayDate];
+        const hits = dayGroup.entries.filter((item) => {
+          const matchSearch = !search || item.saleName.toLowerCase().includes(search) || item.type.toLowerCase().includes(search);
+          const matchDate = !dateFilter || dayDate === dateFilter;
+          const matchType = !typeFilter || item.type === typeFilter;
+          const matchSale = !saleFilter || item.saleName.toLowerCase().includes(saleFilter);
+          return matchSearch && matchDate && matchType && matchSale;
+        });
+        return hits.length > 0;
+      });
+
+      if (!filteredDates.length) {
+        els.historyContainer.innerHTML = '<div class="footnote">Aucune production trouvée pour les filtres actifs.</div>';
+        return;
+      }
+
+      const monthLabels = {
+        0: 'Janvier', 1: 'Février', 2: 'Mars', 3: 'Avril', 4: 'Mai', 5: 'Juin',
+        6: 'Juillet', 7: 'Août', 8: 'Septembre', 9: 'Octobre', 10: 'Novembre', 11: 'Décembre'
+      };
+
+      els.historyContainer.innerHTML = filteredDates.map((dayDate) => {
+        const dayGroup = grouped[dayDate];
+        const totalRefs = dayGroup.entries.reduce((sum, item) => sum + parseNumeric(item.totalRefs, 0), 0);
+        const processedRefs = dayGroup.entries.reduce((sum, item) => sum + parseNumeric(item.processedRefs, 0), 0);
+        const remainingRefs = dayGroup.entries.reduce((sum, item) => sum + parseNumeric(item.remainingRefs, 0), 0);
+        const salesCount = dayGroup.entries.length;
+        const finishedCount = dayGroup.entries.filter(item => String(item.status).toLowerCase() === 'terminée').length;
+        const dailyMinutes = dayGroup.entries.reduce((sum, item) => sum + parseNumeric(item.realProductionMinutes, 0), 0);
+        const theoreticalMinutes = dayGroup.entries.reduce((sum, item) => sum + parseNumeric(item.theoreticalMinutes, 0), 0);
+        const dailyPerformance = dailyMinutes > 0 && theoreticalMinutes > 0 ? (theoreticalMinutes / dailyMinutes) * 100 : 0;
+        const closure = state.closures.find(item => item.date === dayDate);
+
+        const rows = dayGroup.entries.map((item) => `
+          <tr>
+            <td>${escapeHtml(item.saleName)}</td>
+            <td>${item.type}</td>
+            <td>${item.totalRefs}</td>
+            <td>${item.processedRefs}</td>
+            <td>${item.remainingRefs}</td>
+            <td>${item.startTime || '--:--'}</td>
+            <td>${item.plannedEnd || '--:--'}</td>
+            <td>${item.targetEnd || '--:--'}</td>
+            <td>${item.realEndTime || '--:--'}</td>
+            <td>${item.pause30 ? 'Oui' : 'Non'}</td>
+            <td>${formatMinutesCompact(item.realProductionMinutes)}</td>
+            <td>${item.performance ? item.performance.toFixed(2) + '%' : '0.00%'}</td>
+            <td>
+              <span class="status-pill ${statusToClass(item.status)}">${item.status}</span>
+            </td>
+            <td>
+              <div class="history-actions">
+                <button class="mini-btn" data-action="edit-production" data-id="${item.id}">Modifier</button>
+                <button class="mini-btn" data-action="mark-finished" data-id="${item.id}">Terminer</button>
+                <button class="mini-btn" data-action="delete-production" data-id="${item.id}">Supprimer</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        return `
+          <div class="history-date-group">
+            <div class="day-header">
+              <div>
+                <strong>${formatDate(dayDate)}</strong>
+                <span class="footnote">${monthLabels[new Date(`${dayDate}T00:00:00`).getMonth()]}</span>
+              </div>
+              <div class="upcoming-actions">
+                <button class="mini-btn" data-action="close-day" data-date="${dayDate}">${closure && closure.closed ? 'Jour fermé' : '🔒 Clôture pour la journée'}</button>
+                ${closure && closure.closed ? '<button class="mini-btn" data-action="reopen-day" data-date="'+dayDate+'">Rouvrir la journée</button>' : ''}
+              </div>
+            </div>
+
+            <div class="day-summary-grid">
+              <div class="cell"><span class="small-label">Date</span><strong>${formatDate(dayDate)}</strong></div>
+              <div class="cell"><span class="small-label">Total refs</span><strong>${totalRefs}</strong></div>
+              <div class="cell"><span class="small-label">Traitées</span><strong>${processedRefs}</strong></div>
+              <div class="cell"><span class="small-label">Reste</span><strong>${remainingRefs}</strong></div>
+              <div class="cell"><span class="small-label">Ventes</span><strong>${salesCount}</strong></div>
+              <div class="cell"><span class="small-label">Term. / Perf.</span><strong>${finishedCount} / ${dailyPerformance ? dailyPerformance.toFixed(2) : '0.00'}%</strong></div>
+              <div class="cell"><span class="small-label">Heures effectuées</span><strong>${formatMinutesCompact(dailyMinutes)}</strong></div>
+              <div class="cell"><span class="small-label">État</span><strong>${closure && closure.closed ? 'Fermée' : 'Ouverte'}</strong></div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Vente</th>
+                    <th>Type</th>
+                    <th>Total</th>
+                    <th>Traité</th>
+                    <th>Reste</th>
+                    <th>Début</th>
+                    <th>Fin prévue</th>
+                    <th>Fin cible -5 min</th>
+                    <th>Fin réelle</th>
+                    <th>Pause</th>
+                    <th>Temps réel</th>
+                    <th>Performance</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function generateDayClosureSummary(date) {
+      const dayEntries = state.productions.filter(item => item.date === date);
+      const salesCount = dayEntries.length;
+      const totalRefs = dayEntries.reduce((sum, item) => sum + parseNumeric(item.totalRefs, 0), 0);
+      const processedRefs = dayEntries.reduce((sum, item) => sum + parseNumeric(item.processedRefs, 0), 0);
+      const remainingRefs = dayEntries.reduce((sum, item) => sum + parseNumeric(item.remainingRefs, 0), 0);
+      const totalMinutes = dayEntries.reduce((sum, item) => sum + parseNumeric(item.realProductionMinutes, 0), 0);
+      const theoreticalMinutes = dayEntries.reduce((sum, item) => sum + parseNumeric(item.theoreticalMinutes, 0), 0);
+      const performance = totalMinutes > 0 && theoreticalMinutes > 0 ? (theoreticalMinutes / totalMinutes) * 100 : 0;
+      const remainingSales = dayEntries.filter(item => item.status !== 'Terminée').length;
+
+      return {
+        date,
+        closed: true,
+        summary: {
+          salesTraitees: salesCount,
+          totalRefs,
+          refsTraitees: processedRefs,
+          refsRestantes: remainingRefs,
+          tempsTotal: totalMinutes,
+          performance,
+          ventesRestant: remainingSales,
+          dateLabel: formatDate(date)
+        }
+      };
+    }
+
+    function renderClosureState() {
+      // no-op hook for future-driven updates; current render includes closure status in history
+    }
+
+    function groupProductionsByDate(productions) {
+      return productions.reduce((acc, item) => {
+        const date = item.date || 'non-date';
+        if (!acc[date]) acc[date] = { date, entries: [] };
+        acc[date].entries.push(item);
+        return acc;
+      }, {});
+    }
+
+    function statusToClass(status) {
+      if (status === 'Terminée') return 'finished';
+      if (status === 'En cours') return 'in_progress';
+      if (status === 'À venir') return 'pending';
+      if (status === 'En retard') return 'late';
+      if (status === 'Fermée') return 'closed';
+      return 'pending';
+    }
+
+    function formatMinutesCompact(totalMinutes) {
+      const minutes = Math.max(0, Math.round(parseNumeric(totalMinutes, 0)));
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      if (hours > 0) return `${hours}h ${mins}m`;
+      return `${mins} min`;
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function refreshAll() {
+      saveToStorage(STORAGE_PRODUCTIONS, state.productions);
+      saveToStorage(STORAGE_UPCOMING, state.upcomingSales);
+      saveToStorage(STORAGE_CLOSURES, state.closures);
+      renderDashboard();
+      renderUpcomingSales();
+      renderHistory();
+      renderCapacity();
+      syncFormObjective();
+    }
+
+    function syncFormObjective() {
+      const type = els.typeInput.value;
+      const objective = computeObjective(type);
+      els.objectiveInput.value = objective ? objective.toFixed(2) : '0';
+      els.upObjective.value = objective ? objective.toFixed(2) : '0';
+    }
+
+    function getProductionFormValues() {
+      return {
+        date: els.dateInput.value,
+        saleName: els.saleNameInput.value.trim(),
+        type: els.typeInput.value,
+        totalRefs: els.totalRefsInput.value,
+        processedRefs: els.processedRefsInput.value,
+        startTime: els.startTimeInput.value,
+        realEndTime: els.realEndTimeInput.value,
+        pause30: els.pause30Input.checked,
+        plannedEnd: els.plannedEndInput.value,
+        targetEnd: els.targetEndInput.value,
+        status: els.statusInput.value,
+        objective: els.objectiveInput.value,
+        theoreticalMinutes: els.theoreticalMinutesInput.value,
+        realProductionMinutes: els.realMinutesInput.value,
+        performance: els.performanceInput.value,
+        remainingRefs: els.remainingRefsInput.value
+      };
+    }
+
+    function populateProductionForm(production) {
+      state.editingProductionId = production.id;
+      els.editingStatusText.textContent = 'Modification';
+      els.dateInput.value = production.date || '';
+      els.saleNameInput.value = production.saleName || '';
+      els.typeInput.value = production.type || 'AL SIMPLE';
+      els.totalRefsInput.value = production.totalRefs || 0;
+      els.processedRefsInput.value = production.processedRefs || 0;
+      els.startTimeInput.value = production.startTime || '';
+      els.realEndTimeInput.value = production.realEndTime || '';
+      els.pause30Input.checked = Boolean(production.pause30);
+      els.statusInput.value = production.status || 'À venir';
+      els.plannedDateInput.value = production.date || '';
+      syncFormObjective();
+      updateCalculatedFields();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetProductionForm() {
+      state.editingProductionId = null;
+      els.editingStatusText.textContent = 'Nouvelle';
+      els.productionForm.reset();
+      els.typeInput.value = 'AL SIMPLE';
+      els.statusInput.value = 'À venir';
+      els.dateInput.value = new Date().toISOString().split('T')[0];
+      els.objectiveInput.value = computeObjective('AL SIMPLE').toFixed(2);
+      els.pause30Input.checked = false;
+      updateCalculatedFields();
+      els.plannedEndInput.value = '';
+      els.targetEndInput.value = '';
+      els.theoreticalMinutesInput.value = '';
+      els.realMinutesInput.value = '';
+      els.performanceInput.value = '';
+      els.remainingRefsInput.value = '';
+      els.remainingDisplay.textContent = '0 références';
+      els.theoreticalDisplay.textContent = '0 min';
+      els.plannedEndDisplay.textContent = '--:--';
+      els.targetEndDisplay.textContent = '--:--';
+      els.realMinuteDisplay.textContent = '0 min';
+      els.performanceDisplay.textContent = '0%';
+    }
+
+    function updateCalculatedFields() {
+      const payload = {
+        date: els.dateInput.value,
+        totalRefs: els.totalRefsInput.value,
+        processedRefs: els.processedRefsInput.value,
+        type: els.typeInput.value,
+        startTime: els.startTimeInput.value,
+        realEndTime: els.realEndTimeInput.value,
+        pause30: els.pause30Input.checked,
+        status: els.statusInput.value
+      };
+
+      const calc = computeProductionData(payload);
+      const objective = computeObjective(els.typeInput.value);
+      const remaining = parseNumeric(els.totalRefsInput.value, 0) - parseNumeric(els.processedRefsInput.value, 0);
+
+      els.objectiveInput.value = objective ? objective.toFixed(2) : '0';
+      els.plannedEndInput.value = calc.plannedEnd || '';
+      els.targetEndInput.value = calc.targetEnd || '';
+      els.theoreticalMinutesInput.value = calc.theoreticalMinutes ? `${Math.round(calc.theoreticalMinutes)} min` : '0 min';
+      els.realMinutesInput.value = calc.realProductionMinutes ? `${Math.round(calc.realProductionMinutes)} min` : '0 min';
+      els.performanceInput.value = calc.performance ? `${calc.performance.toFixed(2)} %` : '0.00 %';
+      els.remainingRefsInput.value = remaining;
+
+      els.remainingDisplay.textContent = `${Math.max(0, remaining)} références`;
+      els.theoreticalDisplay.textContent = `${Math.round(calc.theoreticalMinutes)} min`;
+      els.plannedEndDisplay.textContent = calc.plannedEnd || '--:--';
+      els.targetEndDisplay.textContent = calc.targetEnd || '--:--';
+      els.realMinuteDisplay.textContent = `${Math.round(calc.realProductionMinutes)} min`;
+      els.performanceDisplay.textContent = `${calc.performance ? calc.performance.toFixed(2) : '0.00'} %`;
+      els.performanceDisplay.className = calc.performance >= 100 ? 'positive' : calc.performance >= 80 ? 'positive' : (calc.performance >= 60 ? 'warning' : 'danger');
+      if (calc.performance >= 100) {
+        els.performanceDisplay.classList.add('positive');
+      }
+    }
+
+    function saveProduction(event) {
+      event.preventDefault();
+      const values = getProductionFormValues();
+      if (!values.saleName || !values.date || !values.type) {
+        alert('Veuillez renseigner au minimum le nom de vente, la date et le type de production.');
+        return;
+      }
+
+      const payload = computeProductionData(values);
+      const production = {
+        id: state.editingProductionId || uid('prod'),
+        date: values.date,
+        saleName: values.saleName,
+        type: values.type,
+        totalRefs: parseNumeric(values.totalRefs, 0),
+        processedRefs: parseNumeric(values.processedRefs, 0),
+        startTime: values.startTime || '',
+        realEndTime: values.realEndTime || '',
+        pause30: Boolean(values.pause30),
+        plannedEnd: payload.plannedEnd || '',
+        targetEnd: payload.targetEnd || '',
+        objective: payload.objective,
+        theoreticalMinutes: payload.theoreticalMinutes,
+        realProductionMinutes: payload.realProductionMinutes,
+        performance: payload.performance,
+        remainingRefs: payload.remainingRefs,
+        status: values.status || payload.status,
+        createdAt: new Date().toISOString()
+      };
+
+      if (state.editingProductionId) {
+        const index = state.productions.findIndex(item => item.id === state.editingProductionId);
+        if (index >= 0) state.productions[index] = production;
+      } else {
+        state.productions.push(production);
+      }
+
+      refreshAll();
+      resetProductionForm();
+    }
+
+    function deleteProduction(productionId) {
+      state.productions = state.productions.filter(item => item.id !== productionId);
+      refreshAll();
+    }
+
+    function markFinished(productionId) {
+      const production = state.productions.find(item => item.id === productionId);
+      if (!production) return;
+      production.processedRefs = production.totalRefs;
+      production.remainingRefs = 0;
+      production.realEndTime = production.realEndTime || new Date().toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      const calc = computeProductionData({
+        date: production.date,
+        saleName: production.saleName,
+        type: production.type,
+        totalRefs: production.totalRefs,
+        processedRefs: production.processedRefs,
+        startTime: production.startTime,
+        realEndTime: production.realEndTime,
+        pause30: production.pause30,
+        status: 'Terminée'
+      });
+      production.plannedEnd = calc.plannedEnd || production.plannedEnd || '';
+      production.targetEnd = calc.targetEnd || production.targetEnd || '';
+      production.theoreticalMinutes = calc.theoreticalMinutes;
+      production.realProductionMinutes = calc.realProductionMinutes;
+      production.performance = calc.performance;
+      production.status = 'Terminée';
+      production.remainingRefs = 0;
+      refreshAll();
+    }
+
+    function handleHistoryActions(event) {
+      const button = event.target.closest('[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      const id = button.dataset.id;
+      const date = button.dataset.date;
+
+      if (action === 'edit-production') {
+        const production = state.productions.find(item => item.id === id);
+        if (production) populateProductionForm(production);
+      }
+      if (action === 'mark-finished') {
+        markFinished(id);
+      }
+      if (action === 'delete-production') {
+        if (window.confirm('Supprimer cette production ?')) deleteProduction(id);
+      }
+      if (action === 'close-day') {
+        const summary = generateDayClosureSummary(date);
+        const existing = state.closures.find(item => item.date === date);
+        if (existing) {
+          existing.summary = summary.summary;
+          existing.closed = true;
+        } else {
+          state.closures.push(summary);
+        }
+        refreshAll();
+      }
+      if (action === 'reopen-day') {
+        const entry = state.closures.find(item => item.date === date);
+        if (entry) entry.closed = false;
+        refreshAll();
+      }
+    }
+
+    function saveUpcomingSale(event) {
+      event.preventDefault();
+      const name = els.upSaleName.value.trim();
+      const volume = parseNumeric(els.upVolume.value, 0);
+      const code = els.upCode.value;
+      const date = els.upDate.value;
+      if (!name || !date) {
+        alert('Le nom de vente et la date prévue sont obligatoires.');
+        return;
+      }
+
+      const sale = {
+        id: uid('upcoming'),
+        name,
+        volume,
+        code,
+        objective: computeObjective(code),
+        date,
+        startTime: els.upStartTime.value,
+        priority: els.upPriority.value,
+        status: els.upStatus.value,
+        note: els.upNote.value.trim()
+      };
+
+      state.upcomingSales.push(sale);
+      saveUpcomingFormReset();
+      refreshAll();
+    }
+
+    function saveUpcomingFormReset() {
+      els.upcomingForm.reset();
+      els.upCode.value = 'AL SIMPLE';
+      els.upPriority.value = 'Moyenne';
+      els.upStatus.value = 'À venir';
+      els.upObjective.value = computeObjective('AL SIMPLE').toFixed(2);
+    }
+
+    function deleteUpcomingSale(id) {
+      state.upcomingSales = state.upcomingSales.filter(item => item.id !== id);
+      refreshAll();
+    }
+
+    function editUpcomingSale(id) {
+      const sale = state.upcomingSales.find(item => item.id === id);
+      if (!sale) return;
+      els.upSaleName.value = sale.name;
+      els.upVolume.value = sale.volume;
+      els.upCode.value = sale.code;
+      els.upObjective.value = sale.objective || computeObjective(sale.code);
+      els.upDate.value = sale.date;
+      els.upStartTime.value = sale.startTime || '';
+      els.upPriority.value = sale.priority || 'Moyenne';
+      els.upStatus.value = sale.status || 'À venir';
+      els.upNote.value = sale.note || '';
+      state.upcomingSales = state.upcomingSales.filter(item => item.id !== id);
+      refreshAll();
+    }
+
+    function launchUpcomingSale(id) {
+      const sale = state.upcomingSales.find(item => item.id === id);
+      if (!sale) return;
+      const dateValue = sale.date || new Date().toISOString().split('T')[0];
+      const production = {
+        id: uid('prod'),
+        date: dateValue,
+        saleName: sale.name,
+        type: sale.code,
+        totalRefs: Number(sale.volume) || 0,
+        processedRefs: 0,
+        startTime: sale.startTime || '',
+        realEndTime: '',
+        pause30: false,
+        plannedEnd: sale.startTime && sale.volume ? addMinutesToTime(sale.startTime, ((Number(sale.volume) / computeObjective(sale.code)) * 60)) : '',
+        targetEnd: '',
+        objective: computeObjective(sale.code),
+        theoreticalMinutes: sale.volume && computeObjective(sale.code) ? (sale.volume / computeObjective(sale.code)) * 60 : 0,
+        realProductionMinutes: 0,
+        performance: 0,
+        remainingRefs: Number(sale.volume) || 0,
+        status: 'À venir',
+        createdAt: new Date().toISOString()
+      };
+      state.productions.push(production);
+      state.upcomingSales = state.upcomingSales.filter(item => item.id !== id);
+      refreshAll();
+      populateProductionForm(production);
+    }
+
+    function renderCapacity() {
+      const start = els.capacityStart.value;
+      const end = els.capacityEnd.value;
+      const code = els.capacityCode.value;
+      const volume = parseNumeric(els.capacityVolume.value, 0);
+      const pause = els.capacityPause.checked;
+      const objective = computeObjective(code) || 0;
+      const availableMinutes = Math.max(0, minutesBetweenTimes(start, end) - (pause ? 30 : 0));
+      const estimatedRefs = objective ? (availableMinutes / 60) * objective : 0;
+      const remaining = Math.max(0, estimatedRefs - volume);
+
+      els.availableMinutesDisplay.textContent = `${Math.round(availableMinutes)} min`;
+      els.estimatedRefsDisplay.textContent = `${Math.round(estimatedRefs)}`;
+      els.capacityRemainingDisplay.textContent = `${Math.round(remaining)}`;
+      els.capacityObjectiveDisplay.textContent = `${objective.toFixed(2)} refs/h`;
+    }
+
+    function exportData() {
+      const payload = {
+        productions: state.productions,
+        upcomingSales: state.upcomingSales,
+        closures: state.closures,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'astro-prod-backup.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importData(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result));
+          state.productions = Array.isArray(data.productions) ? data.productions : [];
+          state.upcomingSales = Array.isArray(data.upcomingSales) ? data.upcomingSales : [];
+          state.closures = Array.isArray(data.closures) ? data.closures : [];
+          refreshAll();
+          alert('Importation réussie.');
+        } catch (error) {
+          alert('Le fichier de sauvegarde est invalide.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function bindCalculator() {
+      const keys = document.querySelectorAll('.key');
+      keys.forEach(key => {
+        key.addEventListener('click', () => {
+          const value = key.dataset.value;
+          const action = key.dataset.action;
+
+          if (value !== undefined) {
+            if (state.calculator.current === '0' && value !== '.') {
+              state.calculator.current = value;
+            } else if (value === '.' && state.calculator.current.includes('.')) {
+              return;
+            } else {
+              state.calculator.current += value;
+            }
+            els.calcDisplay.textContent = state.calculator.current;
+            return;
+          }
+
+          if (action === 'clear') {
+            state.calculator = { current: '0', operator: null, stored: null };
+            els.calcDisplay.textContent = '0';
+            return;
+          }
+
+          if (action === 'backspace') {
+            state.calculator.current = state.calculator.current.length <= 1 ? '0' : state.calculator.current.slice(0, -1);
+            els.calcDisplay.textContent = state.calculator.current;
+            return;
+          }
+
+          if (action === 'percent') {
+            const n = parseFloat(state.calculator.current || '0');
+            state.calculator.current = (n / 100).toString();
+            els.calcDisplay.textContent = state.calculator.current;
+            return;
+          }
+
+          if (action === 'equals') {
+            if (state.calculator.operator && state.calculator.stored !== null) {
+              const left = parseFloat(state.calculator.stored);
+              const right = parseFloat(state.calculator.current);
+              let result = 0;
+              switch (state.calculator.operator) {
+                case 'add': result = left + right; break;
+                case 'subtract': result = left - right; break;
+                case 'multiply': result = left * right; break;
+                case 'divide': result = right === 0 ? 0 : left / right; break;
+                default: break;
+              }
+              state.calculator.current = String(result);
+              state.calculator.operator = null;
+              state.calculator.stored = null;
+              els.calcDisplay.textContent = state.calculator.current;
+            }
+            return;
+          }
+
+          if (['add', 'subtract', 'multiply', 'divide'].includes(action)) {
+            if (state.calculator.operator && state.calculator.stored !== null) {
+              const left = parseFloat(state.calculator.stored);
+              const right = parseFloat(state.calculator.current);
+              let result = 0;
+              switch (state.calculator.operator) {
+                case 'add': result = left + right; break;
+                case 'subtract': result = left - right; break;
+                case 'multiply': result = left * right; break;
+                case 'divide': result = right === 0 ? 0 : left / right; break;
+                default: break;
+              }
+              state.calculator.current = String(result);
+              els.calcDisplay.textContent = state.calculator.current;
+            }
+            state.calculator.stored = state.calculator.current;
+            state.calculator.operator = action;
+            state.calculator.current = '0';
+          }
+        });
+      });
+
+      document.getElementById('toggleCalcBtn').addEventListener('click', () => {
+        els.floatingCalculator.classList.toggle('hidden');
+      });
+    }
+
+    function setupEvents() {
+      els.typeInput.addEventListener('change', syncFormObjective);
+      els.typeInput.addEventListener('input', syncFormObjective);
+      els.totalRefsInput.addEventListener('input', updateCalculatedFields);
+      els.processedRefsInput.addEventListener('input', updateCalculatedFields);
+      els.startTimeInput.addEventListener('input', updateCalculatedFields);
+      els.realEndTimeInput.addEventListener('input', updateCalculatedFields);
+      els.pause30Input.addEventListener('change', updateCalculatedFields);
+      els.statusInput.addEventListener('change', updateCalculatedFields);
+      els.upCode.addEventListener('change', () => {
+        const objective = computeObjective(els.upCode.value);
+        els.upObjective.value = objective ? objective.toFixed(2) : '0';
+      });
+      els.capacityStart.addEventListener('input', renderCapacity);
+      els.capacityEnd.addEventListener('input', renderCapacity);
+      els.capacityCode.addEventListener('change', renderCapacity);
+      els.capacityVolume.addEventListener('input', renderCapacity);
+      els.capacityPause.addEventListener('change', renderCapacity);
+      els.historySearch.addEventListener('input', renderHistory);
+      els.historyDateFilter.addEventListener('input', renderHistory);
+      els.historyTypeFilter.addEventListener('change', renderHistory);
+      els.historySaleFilter.addEventListener('input', renderHistory);
+      els.exportBtn.addEventListener('click', exportData);
+      els.importBtn.addEventListener('click', () => els.importFileInput.click());
+      els.importFileInput.addEventListener('change', (event) => importData(event.target.files[0]));
+      els.calculateBtn.addEventListener('click', updateCalculatedFields);
+      els.resetFormBtn.addEventListener('click', resetProductionForm);
+      els.productionForm.addEventListener('submit', saveProduction);
+      els.upcomingForm.addEventListener('submit', saveUpcomingSale);
+      els.clearUpcomingFormBtn.addEventListener('click', saveUpcomingFormReset);
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action]');
+        if (!button) return;
+
+        if (button.dataset.action === 'edit-upcoming') {
+          editUpcomingSale(button.dataset.id);
+        }
+        if (button.dataset.action === 'delete-upcoming') {
+          if (window.confirm('Supprimer cette vente à venir ?')) deleteUpcomingSale(button.dataset.id);
+        }
+        if (button.dataset.action === 'launch-upcoming') {
+          launchUpcomingSale(button.dataset.id);
+        }
+        if (button.dataset.action === 'close-day' || button.dataset.action === 'reopen-day' || button.dataset.action === 'edit-production' || button.dataset.action === 'mark-finished' || button.dataset.action === 'delete-production') {
+          handleHistoryActions(event);
+        }
+      });
+    }
+
+    function initializeDefaultData() {
+      if (!state.productions.length) {
+        const today = new Date().toISOString().split('T')[0];
+        state.productions = [
+          {
+            id: uid('prod'),
+            date: today,
+            saleName: 'Apex Tech',
+            type: 'AL SIMPLE',
+            totalRefs: 50,
+            processedRefs: 32,
+            startTime: '08:00',
+            realEndTime: '10:08',
+            pause30: true,
+            plannedEnd: '09:00',
+            targetEnd: '08:55',
+            objective: 10,
+            theoreticalMinutes: 300,
+            realProductionMinutes: 128,
+            performance: 234.38,
+            remainingRefs: 18,
+            status: 'En cours',
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: uid('prod'),
+            date: today,
+            saleName: 'Moon Retail',
+            type: 'FR SIMPLE',
+            totalRefs: 28,
+            processedRefs: 28,
+            startTime: '13:30',
+            realEndTime: '15:05',
+            pause30: false,
+            plannedEnd: '14:28',
+            targetEnd: '14:23',
+            objective: 15,
+            theoreticalMinutes: 112,
+            realProductionMinutes: 95,
+            performance: 118.95,
+            remainingRefs: 0,
+            status: 'Terminée',
+            createdAt: new Date().toISOString()
+          }
+        ];
+      }
+
+      if (!state.upcomingSales.length) {
+        state.upcomingSales = [
+          {
+            id: uid('upcoming'),
+            name: 'Nike',
+            volume: 15,
+            code: 'AL SIMPLE',
+            objective: 10,
+            date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+            startTime: '16:00',
+            priority: 'Haute',
+            status: 'À venir',
+            note: 'Préparation annonce produits'
+          },
+          {
+            id: uid('upcoming'),
+            name: 'Lacoste',
+            volume: 22,
+            code: 'FR COMPLEXE',
+            objective: 6.29,
+            date: new Date(Date.now() + 172800000).toISOString().split('T')[0],
+            startTime: '09:00',
+            priority: 'Moyenne',
+            status: 'À venir',
+            note: 'Mise à jour pack et variantes'
+          }
+        ];
+      }
+    }
+
+    function init() {
+      initializeDefaultData();
+      const today = new Date().toISOString().split('T')[0];
+      els.dateInput.value = today;
+      els.typeInput.value = 'AL SIMPLE';
+      els.statusInput.value = 'À venir';
+      els.upCode.value = 'AL SIMPLE';
+      els.upPriority.value = 'Moyenne';
+      els.capacityStart.value = '14:32';
+      els.capacityEnd.value = '19:00';
+      els.capacityCode.value = 'AL SIMPLE';
+      syncFormObjective();
+      setupEvents();
+      bindCalculator();
+      refreshAll();
+      renderCapacity();
+      resetProductionForm();
+    }
+
+    init();
+  </script>
+</body>
+</html>
